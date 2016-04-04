@@ -8,10 +8,10 @@ volatile unsigned long Plugin_013_timer = 0;
 volatile unsigned long Plugin_013_state = 0;
 
 /*********************************************************************/
-float Plugin_013_read()
+int Plugin_013_read()
 /*********************************************************************/
 {
-  float value = NO_ECHO;
+  int value = NO_ECHO;
   Plugin_013_timer = 0;
   Plugin_013_state = 0;
   noInterrupts();
@@ -28,7 +28,7 @@ float Plugin_013_read()
   // delay(29);  // wait for measurement to finish (max 500 cm * 58 uSec = 29uSec)
   if (Plugin_013_state == 2)
   {
-    value = (float)Plugin_013_timer / 58;
+    value = Plugin_013_timer / 58;
   } else
     Serial.println("Failed to wait");
     
@@ -61,8 +61,8 @@ void Plugin_013_Init()
   attachInterrupt(Plugin_013_IRQ_Pin, Plugin_013_interrupt, CHANGE);
 }
 
-float Plugin_013_Median(uint32_t it) {
-  float uS[it], last;
+int Plugin_013_Median(uint32_t it) {
+  int uS[it], last;
   uint32_t j, i = 0;
   unsigned long t;
   uS[0] = NO_ECHO;
