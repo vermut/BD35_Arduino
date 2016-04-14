@@ -1,6 +1,14 @@
 void net_register(float medianDistance);
-void net_setup();
+void net_enable();
+void net_disable();
+void net_wait_connect();
+bool net_is_connected();
 void net_report(int lastVal);
+
+void Plugin_013_Init();
+float Plugin_013_Median(uint32_t it);
+float Plugin_013_read();
+
 
 #define VCC          D4
 #define TRIGGER_PIN  D3  // Arduino pin tied to trigger pin on the ultrasonic sensor.
@@ -12,7 +20,7 @@ float startUpDistance = -1;
 
 void setup() {
   Serial.begin(115200); // Open serial monitor at 115200 baud to see ping results.
-  // Serial.setDebugOutput(true);
+  Serial.setDebugOutput(true);
   net_enable();
   net_wait_connect();
 
@@ -25,26 +33,27 @@ void setup() {
   Plugin_013_Init();
   startUpDistance = Plugin_013_Median(20);
 
-  /* Serial.print("Startup: ");
+  Serial.print("Startup: ");
   Serial.print(startUpDistance);
-  Serial.println("cm"); */
+  Serial.println("cm"); 
 
   // net_register(startUpDistance);
   // net_report(startUpDistance);
   // resetNextReport();
 
   net_disable();
+  reportSucceeded();
 }
 
 void loop() {
   pingSonar();
   reportIfNeccessary();
-  handleWifi();  
+  handleWifi();
 }
 
 int alertPings = 0;
 void pingSonar() {
-  float curVal =Plugin_013_read();
+  float curVal = Plugin_013_read();
   if (nonStartUpDistance(curVal)) {
     alertPings++;
   }
@@ -52,57 +61,60 @@ void pingSonar() {
 
 boolean timeForReport = false;
 long nextReport = 0;
-void reportIfNeccessary() {
-  if (alertPings > 0 || millis() > nextReport) {
-    timeForReport = true;
-    wifiState = WifiState.DO_CONNECT;
-  }   
-}
-
 enum WifiState {
   OFF,
   DO_CONNECT,
   CONNECTING,
   DO_REPORT
 };
-WifiState wifiState = WifiState.OFF;
+WifiState wifiState = OFF;
+
+void reportIfNeccessary() {
+  Serial.println(alertPings);
+  if (!timeForReport && (alertPings > 0 || millis() > nextReport)) {
+    timeForReport = true;
+    wifiState = DO_CONNECT;
+  }
+}
+
 void handleWifi() {
-  switch (wifiState):
-    case WifiState.OFF: return;
+  Serial.println(wifiState);
+  switch (wifiState) {
+    case OFF: return;
 
-    case WifiState.DO_CONNECT:
+    case DO_CONNECT:
       net_enable();
-      wifiState = WifiState.CONNECTING;
+      wifiState = CONNECTING;
       break;
 
-    case WifiState.CONNECTING:
+    case CONNECTING:
       if (net_is_connected())
-         wifiState = WifiState.DO_REPORT;
+        wifiState = DO_REPORT;
       break;
-      
-    case WifiState.DO_REPORT:
+
+    case DO_REPORT:
       net_report(alertPings);
       net_disable();
       reportSucceeded();
       break;
-  }    
+  }
 }
 
 void reportSucceeded() {
   nextReport = millis() + 60 * 1000;
-  wifiState = WifiState.OFF;
+  wifiState = OFF;
   timeForReport = false;
   alertPings = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void loopy() {
+/*
+  void loopy() {
   // delay(15);
   float curVal =Plugin_013_read();
   if (curVal < 0 || curVal > 220)
     curVal = 220;
-    
+
   if (false && nonStartUpDistance(curVal)) {
     float nextVal[10];
     nextVal[0] = curVal;
@@ -110,7 +122,7 @@ void loopy() {
     for (; i < 10; i++)    {
       delay(15);
       nextVal[i] = Plugin_013_read();
-      if (/* !correlates(startUpDistance, nextVal[i]) && */ !correlates(nextVal[i], nextVal[i - 1]))
+      if (/* !correlates(startUpDistance, nextVal[i]) && !correlates(nextVal[i], nextVal[i - 1]))
         break;
     }
 
@@ -143,8 +155,8 @@ void loopy() {
     Serial.println(1.0 * vermut/total);
     vermut = 0;
     total = 0;
-    } */
-}
+    } 
+}*/
 
 boolean correlates(float base, float value) {
   return (abs(base - value) <= 5);
@@ -157,5 +169,3 @@ boolean nonStartUpDistance(float reading) {
 void resetNextReport() {
   nextReport = millis() + 10 * 1000;
 }
-
-

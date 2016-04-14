@@ -9,16 +9,28 @@ HTTPClient http;
 const char * ssid = "MT29501119";
 const char * pass = "ErikaKot";
 
-void net_setup() {
+void net_enable() {
+  WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(ssid, pass);
+}
+
+void net_wait_connect() {
   Serial.println("Connecting Wifi...");
-  while (WiFiMulti.run() != WL_CONNECTED) {
+  while (!net_is_connected()) {
     delay(200);
   }
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+}
+
+bool net_is_connected() {
+  return (WiFiMulti.run() == WL_CONNECTED);
+}
+
+void net_disable() {
+  WiFi.mode(WIFI_OFF);
 }
 
 void net_register(float medianDistance) {

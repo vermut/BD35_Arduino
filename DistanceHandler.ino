@@ -8,10 +8,10 @@ volatile unsigned long Plugin_013_timer = 0;
 volatile unsigned long Plugin_013_state = 0;
 
 /*********************************************************************/
-int Plugin_013_read()
+float Plugin_013_read()
 /*********************************************************************/
 {
-  int value = NO_ECHO;
+  float value = NO_ECHO;
   Plugin_013_timer = 0;
   Plugin_013_state = 0;
   noInterrupts();
@@ -22,33 +22,31 @@ int Plugin_013_read()
   digitalWrite(Plugin_013_TRIG_Pin, LOW);
   interrupts();
 
-  for (int i=0; i<7 && Plugin_013_state != 2; i++)
-    delay(5);
+  //for (int i=0; i<27 && Plugin_013_state != 2; i++)
+  //  delay(1);
     
-  // delay(29);  // wait for measurement to finish (max 500 cm * 58 uSec = 29uSec)
+  delay(29);  // wait for measurement to finish (max 500 cm * 58 uSec = 29uSec)
   if (Plugin_013_state == 2)
   {
-    value = Plugin_013_timer / 58;
-  } else
-    Serial.println("Failed to wait");
-    
+    value = (float) Plugin_013_timer / 58;
+  } 
+      
   return value;
 }
 
 /*********************************************************************/
-void Plugin_013_interrupt()
+void ICACHE_RAM_ATTR Plugin_013_interrupt()
 /*********************************************************************/
 {
-  byte pinState = digitalRead(Plugin_013_IRQ_Pin);
-  if (pinState == 1) // Start of pulse
+  if (digitalRead(Plugin_013_IRQ_Pin) == 1) // Start of pulse
   {
-    Plugin_013_state = 1;
     Plugin_013_timer = micros();
+    Plugin_013_state = 1;
   }
   else // End of pulse, calculate timelapse between start & end
   {
-    Plugin_013_state = 2;
     Plugin_013_timer = micros() - Plugin_013_timer;
+    Plugin_013_state = 2;
   }
 }
 
@@ -61,8 +59,8 @@ void Plugin_013_Init()
   attachInterrupt(Plugin_013_IRQ_Pin, Plugin_013_interrupt, CHANGE);
 }
 
-int Plugin_013_Median(uint32_t it) {
-  int uS[it], last;
+float Plugin_013_Median(uint32_t it) {
+  float uS[it], last;
   uint32_t j, i = 0;
   unsigned long t;
   uS[0] = NO_ECHO;
