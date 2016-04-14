@@ -55,6 +55,7 @@ int alertPings = 0;
 void pingSonar() {
   float curVal = Plugin_013_read();
   if (nonStartUpDistance(curVal)) {
+    Serial.println(curVal);
     alertPings++;
   }
 }
@@ -65,20 +66,21 @@ enum WifiState {
   OFF,
   DO_CONNECT,
   CONNECTING,
-  DO_REPORT
+  DO_REPORT,
+  CHILL
 };
 WifiState wifiState = OFF;
 
 void reportIfNeccessary() {
-  Serial.println(alertPings);
   if (!timeForReport && (alertPings > 0 || millis() > nextReport)) {
     timeForReport = true;
     wifiState = DO_CONNECT;
   }
 }
 
+long chillTime = 0;
 void handleWifi() {
-  Serial.println(wifiState);
+  // Serial.println(wifiState);
   switch (wifiState) {
     case OFF: return;
 
@@ -95,7 +97,14 @@ void handleWifi() {
     case DO_REPORT:
       net_report(alertPings);
       net_disable();
-      reportSucceeded();
+      chillTime = millis() + 5 * 1000;
+      wifiState = CHILL;
+      break;
+
+    case CHILL:
+      if (millis() > chillTime) {
+        reportSucceeded();
+      }
       break;
   }
 }

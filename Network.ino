@@ -53,7 +53,7 @@ void net_report(int lastVal) {
   Serial.print(lastVal); // Send ping, get distance in cm and print result (0 = outside set distance range)
   Serial.println("cm");
 
-  /*
+  
   StaticJsonBuffer<200> json;
   char jsonBuffer[256];
 
@@ -68,7 +68,7 @@ void net_report(int lastVal) {
   http.POST(jsonBuffer);
   // Serial.println(http.getString());
   http.end();
-  
+  /*
   http.begin("http://192.168.118.254:5000/sensor_record");
   http.POST(jsonBuffer);
   // Serial.println(http.getString());
