@@ -1,5 +1,11 @@
-#define Plugin_013_TRIG_Pin TRIGGER_PIN
-#define Plugin_013_IRQ_Pin  ECHO_PIN
+#define Plugin_013_TRIG_Pin1 TRIGGER_PIN
+#define Plugin_013_IRQ_Pin1  ECHO_PIN
+
+#define Plugin_013_TRIG_Pin2 TRIGGER_PIN2
+#define Plugin_013_IRQ_Pin2  ECHO_PIN2
+
+const uint8_t TRIG[] = {Plugin_013_TRIG_Pin1, Plugin_013_TRIG_Pin2};
+const uint8_t IRQ[] = {Plugin_013_IRQ_Pin1, Plugin_013_IRQ_Pin2};
 
 #define NO_ECHO -1
 #define PING_MEDIAN_DELAY 29000
@@ -8,18 +14,18 @@ volatile unsigned long Plugin_013_timer = 0;
 volatile unsigned long Plugin_013_state = 0;
 
 /*********************************************************************/
-float Plugin_013_read()
+float Plugin_013_read(byte id)
 /*********************************************************************/
 {
   float value = NO_ECHO;
   Plugin_013_timer = 0;
   Plugin_013_state = 0;
   noInterrupts();
-  digitalWrite(Plugin_013_TRIG_Pin, LOW);
+  digitalWrite(TRIG[id], LOW);
   delayMicroseconds(2);
-  digitalWrite(Plugin_013_TRIG_Pin, HIGH);
+  digitalWrite(TRIG[id], HIGH);
   delayMicroseconds(10);
-  digitalWrite(Plugin_013_TRIG_Pin, LOW);
+  digitalWrite(TRIG[id], LOW);
   interrupts();
 
   //for (int i=0; i<27 && Plugin_013_state != 2; i++)
@@ -35,10 +41,26 @@ float Plugin_013_read()
 }
 
 /*********************************************************************/
-void ICACHE_RAM_ATTR Plugin_013_interrupt()
+void ICACHE_RAM_ATTR Plugin_013_interrupt1()
 /*********************************************************************/
 {
-  if (digitalRead(Plugin_013_IRQ_Pin) == 1) // Start of pulse
+  if (digitalRead(Plugin_013_IRQ_Pin1) == 1) // Start of pulse
+  {
+    Plugin_013_timer = micros();
+    Plugin_013_state = 1;
+  }
+  else // End of pulse, calculate timelapse between start & end
+  {
+    Plugin_013_timer = micros() - Plugin_013_timer;
+    Plugin_013_state = 2;
+  }
+}
+
+/*********************************************************************/
+void ICACHE_RAM_ATTR Plugin_013_interrupt2()
+/*********************************************************************/
+{
+  if (digitalRead(Plugin_013_IRQ_Pin2) == 1) // Start of pulse
   {
     Plugin_013_timer = micros();
     Plugin_013_state = 1;
@@ -54,12 +76,16 @@ void ICACHE_RAM_ATTR Plugin_013_interrupt()
 void Plugin_013_Init()
 /*********************************************************************/
 {
-  pinMode(Plugin_013_TRIG_Pin, OUTPUT);
-  pinMode(Plugin_013_IRQ_Pin, INPUT_PULLUP);
-  attachInterrupt(Plugin_013_IRQ_Pin, Plugin_013_interrupt, CHANGE);
+  pinMode(Plugin_013_TRIG_Pin1, OUTPUT);
+  pinMode(Plugin_013_IRQ_Pin1, INPUT_PULLUP);
+  attachInterrupt(Plugin_013_IRQ_Pin1, Plugin_013_interrupt1, CHANGE);
+
+  pinMode(Plugin_013_TRIG_Pin2, OUTPUT);
+  pinMode(Plugin_013_IRQ_Pin2, INPUT_PULLUP);
+  attachInterrupt(Plugin_013_IRQ_Pin2, Plugin_013_interrupt2, CHANGE);  
 }
 
-float Plugin_013_Median(uint32_t it) {
+float Plugin_013_Median(byte id, uint32_t it) {
   float uS[it], last;
   uint32_t j, i = 0;
   unsigned long t;
@@ -67,7 +93,7 @@ float Plugin_013_Median(uint32_t it) {
 
   while (i < it) {
     t = micros();  // Start ping timestamp.
-    last = Plugin_013_read(); // Send ping.
+    last = Plugin_013_read(id); // Send ping.
 
     if (last != NO_ECHO) {       // Ping in range, include as part of median.
       if (i > 0) {               // Don't start sort till second ping.
