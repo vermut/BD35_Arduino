@@ -3,7 +3,7 @@ void net_enable();
 void net_disable();
 void net_wait_connect();
 bool net_is_connected();
-void net_report(int lastVal);
+void net_report(int lastVal1, int lastVal2);
 
 void Plugin_013_Init();
 float Plugin_013_Median(byte id, uint32_t it);
@@ -16,12 +16,13 @@ float Plugin_013_read(byte id);
 #define GND          D1
 
 // Using native VCC (3.3v)
-#define TRIGGER_PIN2  D8  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-#define ECHO_PIN2     D7  // Arduino pin tied to echo pin on the ultrasonic sensor.
-#define GND2          D6
+#define VCC2          D7
+#define TRIGGER_PIN2  D6  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN2     D5  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define GND2          D0
 
 ADC_MODE(ADC_VCC);
-float startUpDistance[] = {-1, -1};
+float startUpDistance[] = { -1, -1};
 
 void setup() {
   Serial.begin(115200); // Open serial monitor at 115200 baud to see ping results.
@@ -32,6 +33,8 @@ void setup() {
   // Power setup
   pinMode(VCC, OUTPUT);
   digitalWrite(VCC, HIGH);
+  pinMode(VCC2, OUTPUT);
+  digitalWrite(VCC2, HIGH);
   pinMode(GND, OUTPUT);
   digitalWrite(GND, LOW);
   pinMode(GND2, OUTPUT);
@@ -44,16 +47,15 @@ void setup() {
 
   Serial.print("Startup: ");
   Serial.print(startUpDistance[0]);
-  Serial.print(", ");  
+  Serial.print(", ");
   Serial.print(startUpDistance[1]);
-  Serial.println("cm"); 
+  Serial.println("cm");
 
   // net_register(startUpDistance);
   // net_report(startUpDistance);
   // resetNextReport();
 
-  net_disable();
-  reportSucceeded();
+  chill();
 }
 
 void loop() {
@@ -62,7 +64,7 @@ void loop() {
   handleWifi();
 }
 
-int alertPings = 0;
+int alertPings[] = {0, 0};
 enum WifiState {
   OFF,
   DO_CONNECT,
@@ -74,13 +76,16 @@ WifiState wifiState = OFF;
 void pingSonar() {
   if (wifiState == CONNECTING || wifiState == DO_REPORT)
     return;
-  
-  float curVal = Plugin_013_read(0);
-  if (nonStartUpDistance(0, curVal)) {
-    Serial.println(curVal);
-    alertPings++;
-  } else {
-    alertPings = 0;
+
+  for (int i = 0; i <= 1; i++)
+  {
+    float curVal = Plugin_013_read(i);
+    if (nonStartUpDistance(i, curVal)) {
+      Serial.println(curVal);
+      alertPings[i]++;
+    } else {
+      alertPings[i] = 0;
+    }
   }
 }
 
@@ -88,7 +93,9 @@ void pingSonar() {
 boolean timeForReport = false;
 long nextReport = 0;
 void reportIfNeccessary() {
-  if (!timeForReport && (alertPings >= ALERT_THRESHOLD || millis() > nextReport)) {
+  if (!timeForReport && (
+        alertPings[0] >= ALERT_THRESHOLD || alertPings[1] >= ALERT_THRESHOLD
+        || millis() > nextReport)) {
     timeForReport = true;
     wifiState = DO_CONNECT;
   }
@@ -111,10 +118,8 @@ void handleWifi() {
       break;
 
     case DO_REPORT:
-      net_report(alertPings);
-      net_disable();
-      chillTime = millis() + 5 * 1000;
-      wifiState = CHILL;
+      net_report(alertPings[0], alertPings[1]);
+      chill();
       break;
 
     case CHILL:
@@ -125,63 +130,20 @@ void handleWifi() {
   }
 }
 
+void chill() {
+      timeForReport = true;   // keep it true here
+      net_disable();
+      chillTime = millis() + 1 * 1000;
+      wifiState = CHILL;  
+}
+
 void reportSucceeded() {
   nextReport = millis() + 60 * 1000;
   wifiState = OFF;
   timeForReport = false;
-  alertPings = 0;
+  for (int i = 0; i < 1; i++)
+    alertPings[i] = 0;
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-  void loopy() {
-  // delay(15);
-  float curVal =Plugin_013_read();
-  if (curVal < 0 || curVal > 220)
-    curVal = 220;
-
-  if (false && nonStartUpDistance(curVal)) {
-    float nextVal[10];
-    nextVal[0] = curVal;
-    int i = 1;
-    for (; i < 10; i++)    {
-      delay(15);
-      nextVal[i] = Plugin_013_read();
-      if (/* !correlates(startUpDistance, nextVal[i]) && !correlates(nextVal[i], nextVal[i - 1]))
-        break;
-    }
-
-    if (i > 2) {
-      for (int j = 0; j < i; j++)    {
-        Serial.print(nextVal[j]);
-        Serial.print(",");
-        Serial.println((i - 1) * 10);
-      }
-      Serial.println("500,0");
-    }
-
-  } else {
-    Serial.print(curVal);
-    Serial.println(",0");
-  }
-
-  /* if (reportable_reading(curVal)/* && multiCheck(10)* /) {
-    vermut++;
-    // net_report(curVal);
-    // resetNextReport();
-    // Serial.println("---");
-    } else if (millis() > nextReport) {
-    // Report safe values
-    // net_report(curVal);
-    resetNextReport();
-    Serial.println("-MARK-");
-    Serial.println(vermut);
-    Serial.println(total);
-    Serial.println(1.0 * vermut/total);
-    vermut = 0;
-    total = 0;
-    } 
-}*/
 
 boolean correlates(float base, float value) {
   return (abs(base - value) <= 5);

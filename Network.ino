@@ -48,18 +48,20 @@ void net_register(float medianDistance) {
   http.end();
 }
 
-void net_report(int lastVal) {
+void net_report(int lastVal1, int lastVal2) {
   Serial.print("Ping: ");
-  Serial.print(lastVal); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.print(lastVal1); 
+  Serial.print(", ");
+  Serial.print(lastVal2); 
   Serial.println("cm");
 
-  
   StaticJsonBuffer<200> json;
   char jsonBuffer[256];
 
   JsonObject& root = json.createObject();
   root["id"] = ESP.getChipId();
-  root["distance"] = lastVal;
+  root["distance"] = lastVal1;
+  root["distance2"] = lastVal2;
   root["voltage"] = ESP.getVcc();
   root.printTo(jsonBuffer, sizeof(jsonBuffer));
   // root.printTo(Serial);
