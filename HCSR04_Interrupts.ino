@@ -1,6 +1,8 @@
 void net_register(float medianDistance);
 void net_enable();
 void net_disable();
+void net_connect();
+void net_disconnect();
 void net_wait_connect();
 bool net_is_connected();
 void net_report(int lastVal1, int lastVal2);
@@ -108,8 +110,9 @@ void handleWifi() {
     case OFF: return;
 
     case DO_CONNECT:
-      net_enable();
+      net_connect();
       wifiState = CONNECTING;
+      Serial.println("-> CONNECTING");
       break;
 
     case CONNECTING:
@@ -118,13 +121,17 @@ void handleWifi() {
       break;
 
     case DO_REPORT:
+      Serial.println("-> DO_REPORT");
       net_report(alertPings[0], alertPings[1]);
+      Serial.println("-> DONE_REPORT");
       chill();
+      Serial.println("-> CHILL");
       break;
 
     case CHILL:
       if (millis() > chillTime) {
         reportSucceeded();
+        Serial.println("-> READY");
       }
       break;
   }
@@ -132,8 +139,8 @@ void handleWifi() {
 
 void chill() {
       timeForReport = true;   // keep it true here
-      net_disable();
-      chillTime = millis() + 1 * 1000;
+      net_disconnect();
+      chillTime = millis() + 500;
       wifiState = CHILL;  
 }
 
@@ -145,14 +152,16 @@ void reportSucceeded() {
     alertPings[i] = 0;
 }
 
+/*
 boolean correlates(float base, float value) {
   return (abs(base - value) <= 5);
-}
+}*/
 
 boolean nonStartUpDistance(byte id, float reading) {
-  return (reading > 0 && abs(reading - startUpDistance[id]) > 5);
+  return (reading > 0 && abs(reading - startUpDistance[id]) > 15);
 }
 
+/*
 void resetNextReport() {
   nextReport = millis() + 10 * 1000;
-}
+}*/

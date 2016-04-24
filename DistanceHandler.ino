@@ -27,15 +27,10 @@ float Plugin_013_read(byte id)
   delayMicroseconds(10);
   digitalWrite(TRIG[id], LOW);
   interrupts();
-
-  //for (int i=0; i<27 && Plugin_013_state != 2; i++)
-  //  delay(1);
     
   delay(29);  // wait for measurement to finish (max 500 cm * 58 uSec = 29uSec)
   if (Plugin_013_state == 2)
-  {
     value = (float) Plugin_013_timer / 58;
-  } 
       
   return value;
 }
