@@ -20,6 +20,9 @@ IPAddress dns = IPAddress(8, 8, 8, 8);
 
 void net_enable() {
   WiFi.mode(WIFI_STA);
+  WiFi.setPhyMode(WIFI_PHY_MODE_11B);
+  WiFi.setSleepMode(WIFI_MODEM_SLEEP);
+  wifi_status_led_uninstall();
   WiFi.scanNetworks();
   WiFi.begin(ssid, pass);
   WiFi.config(ip, gw, mask, dns);

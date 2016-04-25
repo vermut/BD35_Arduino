@@ -53,14 +53,11 @@ void setup() {
   Serial.print(startUpDistance[1]);
   Serial.println("cm");
 
-  // net_register(startUpDistance);
-  // net_report(startUpDistance);
-  // resetNextReport();
-
   chill();
 }
 
 void loop() {
+//  delay(50);
   pingSonar();
   reportIfNeccessary();
   handleWifi();
@@ -138,10 +135,10 @@ void handleWifi() {
 }
 
 void chill() {
-      timeForReport = true;   // keep it true here
-      net_disconnect();
-      chillTime = millis() + 500;
-      wifiState = CHILL;  
+  timeForReport = true;   // keep it true here
+  net_disconnect();
+  chillTime = millis() + 500;
+  wifiState = CHILL;
 }
 
 void reportSucceeded() {
@@ -153,15 +150,15 @@ void reportSucceeded() {
 }
 
 /*
-boolean correlates(float base, float value) {
+  boolean correlates(float base, float value) {
   return (abs(base - value) <= 5);
-}*/
+  }*/
 
 boolean nonStartUpDistance(byte id, float reading) {
   return (reading > 0 && abs(reading - startUpDistance[id]) > 15);
 }
 
 /*
-void resetNextReport() {
+  void resetNextReport() {
   nextReport = millis() + 10 * 1000;
-}*/
+  }*/
