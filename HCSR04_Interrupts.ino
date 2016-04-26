@@ -16,12 +16,16 @@ float Plugin_013_read(byte id);
 #define TRIGGER_PIN  D3  // Arduino pin tied to trigger pin on the ultrasonic sensor.
 #define ECHO_PIN     D2  // Arduino pin tied to echo pin on the ultrasonic sensor.
 #define GND          D1
+#define SENSOR_COUNT 1
 
+// #define SENSOR_COUNT 2
 // Using native VCC (3.3v)
 #define VCC2          D7
 #define TRIGGER_PIN2  D6  // Arduino pin tied to trigger pin on the ultrasonic sensor.
 #define ECHO_PIN2     D5  // Arduino pin tied to echo pin on the ultrasonic sensor.
 #define GND2          D0
+
+#define ALERT_THRESHOLD 2
 
 ADC_MODE(ADC_VCC);
 float startUpDistance[] = { -1, -1};
@@ -72,11 +76,12 @@ enum WifiState {
   CHILL
 };
 WifiState wifiState = OFF;
+
 void pingSonar() {
   if (wifiState == CONNECTING || wifiState == DO_REPORT)
     return;
 
-  for (int i = 0; i <= 1; i++)
+  for (int i = 0; i < SENSOR_COUNT; i++)
   {
     float curVal = Plugin_013_read(i);
     if (nonStartUpDistance(i, curVal)) {
@@ -88,7 +93,6 @@ void pingSonar() {
   }
 }
 
-#define ALERT_THRESHOLD 1
 boolean timeForReport = false;
 long nextReport = 0;
 void reportIfNeccessary() {
