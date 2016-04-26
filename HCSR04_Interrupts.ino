@@ -25,7 +25,7 @@ float Plugin_013_read(byte id);
 #define ECHO_PIN2     D5  // Arduino pin tied to echo pin on the ultrasonic sensor.
 #define GND2          D0
 
-#define ALERT_THRESHOLD 2
+#define ALERT_THRESHOLD 1
 
 ADC_MODE(ADC_VCC);
 float startUpDistance[] = { -1, -1};
