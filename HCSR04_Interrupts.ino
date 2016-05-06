@@ -18,23 +18,38 @@ float Plugin_013_read(byte id);
 #define GND          D1
 #define SENSOR_COUNT 1
 
-// #define SENSOR_COUNT 2
 // Using native VCC (3.3v)
-#define VCC2          D7
-#define TRIGGER_PIN2  D6  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-#define ECHO_PIN2     D5  // Arduino pin tied to echo pin on the ultrasonic sensor.
-#define GND2          D0
+//#define VCC2          D7
+//#define TRIGGER_PIN2  D6  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+//#define ECHO_PIN2     D5  // Arduino pin tied to echo pin on the ultrasonic sensor.
+//#define GND2          D0
+
+#define VCC2          D0
+#define TRIGGER_PIN2  D5  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN2     D6  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define GND2          D7
+
 
 #define ALERT_THRESHOLD 1
 
 ADC_MODE(ADC_VCC);
 float startUpDistance[] = { -1, -1};
 
+
+enum WifiState {
+  OFF,
+  DO_CONNECT,
+  CONNECTING,
+  DO_REPORT,
+  CHILL
+};
+WifiState wifiState = OFF;
+
 void setup() {
   Serial.begin(115200); // Open serial monitor at 115200 baud to see ping results.
   Serial.setDebugOutput(true);
   net_enable();
-  net_wait_connect();
+//  net_wait_connect();
 
   // Power setup
   pinMode(VCC, OUTPUT);
@@ -57,7 +72,10 @@ void setup() {
   Serial.print(startUpDistance[1]);
   Serial.println("cm");
 
-  chill();
+  Serial.print("ID: ");
+  Serial.println(ESP.getChipId());
+
+  wifiState = DO_CONNECT;
 }
 
 void loop() {
@@ -68,14 +86,6 @@ void loop() {
 }
 
 int alertPings[] = {0, 0};
-enum WifiState {
-  OFF,
-  DO_CONNECT,
-  CONNECTING,
-  DO_REPORT,
-  CHILL
-};
-WifiState wifiState = OFF;
 
 void pingSonar() {
   if (wifiState == CONNECTING || wifiState == DO_REPORT)
@@ -93,7 +103,7 @@ void pingSonar() {
   }
 }
 
-boolean timeForReport = false;
+boolean timeForReport = true;
 long nextReport = 0;
 void reportIfNeccessary() {
   if (!timeForReport && (
